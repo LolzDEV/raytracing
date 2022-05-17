@@ -2,7 +2,7 @@ use std::f64::INFINITY;
 
 use cgmath::{Point3, Vector3};
 
-use crate::util::{Color, Hittable, Scene, random_vector_in_unit_sphere, unit_vector};
+use crate::util::{Color, Scene};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
@@ -27,14 +27,20 @@ impl Ray {
         self.origin + t * self.direction
     }
 
-    pub fn color(&self, scene: &Scene, depth: usize) -> Color {
+    pub fn color(self, scene: &Scene, depth: usize) -> Color {
         if depth <= 0 {
             return Color::new(0., 0., 0.);
         }
 
-        if let Some(hit) = scene.hit(*self, 0.001, INFINITY) {
-            if let Some(scattered) = hit.material.scatter(*self, hit) {
-                return Color::new(scattered.attenuation.x * scattered.scattered.color(scene, depth-1).x, scattered.attenuation.y * scattered.scattered.color(scene, depth-1).y, scattered.attenuation.z * scattered.scattered.color(scene, depth-1).z);
+        if let Some(hit) = scene.hit(self, 0.001, INFINITY) {
+            if let Some(scattered) = hit.material.scatter(self, hit) {
+                let scattered_color = scattered.scattered.color(scene, depth - 1);
+
+                return Color::new(
+                    scattered.attenuation.x * scattered_color.x,
+                    scattered.attenuation.y * scattered_color.y,
+                    scattered.attenuation.z * scattered_color.z,
+                );
             }
 
             return Color::new(0., 0., 0.);
